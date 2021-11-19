@@ -220,12 +220,6 @@ class Helper:
 
     @classmethod
     def compare(cls, base, new):
-        def compare_dict(_base, _new):
-            pass
-
-        def compare_list(_base, _new):
-            pass
-
         if isinstance(base, dict):
             difference = False
             res = {}

@@ -70,7 +70,7 @@ class JsonSchemaLoaderMixin:
     def load_from_rt(self, rt):
         schema = {}
         for name in rt:
-            uri = '{0}-schema.json'.format(name)
+            uri = '{0}.json'.format(name)
             _schema = self.load_from_uri(uri)
             Helper.update_dict(schema, _schema)
         return schema
