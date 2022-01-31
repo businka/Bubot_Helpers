@@ -1,9 +1,10 @@
 import json
-import urllib.parse
-from Bubot.Helpers.Helper import Helper
-from Bubot.Helpers.ExtException import ExtException
-from os import path
 import os.path
+import urllib.parse
+from os import path
+
+from Bubot.Helpers.ExtException import ExtException
+from Bubot.Helpers.Helper import Helper
 
 
 class JsonSchemaLoaderMixin:
@@ -58,7 +59,8 @@ class JsonSchemaLoaderMixin:
                 try:
                     raw = json.load(file)
                 except Exception as err:
-                    raise ExtException(message='JsonSchema not load from file', detail=f'{file_name} {str(err)}') from err
+                    raise ExtException(message='JsonSchema not load from file',
+                                       detail=f'{file_name} {str(err)}') from err
             self.load(raw)
             return self.cache[self.id]['data']
         except Exception as err:
@@ -153,7 +155,7 @@ class JsonSchemaLoaderMixin:
             if name not in data:
                 data[name] = value
             else:
-                data[name] = list(set(data[name]+ value))
+                data[name] = list(set(data[name] + value))
         pass
 
     def load_elem_bool(self, data, value, name):

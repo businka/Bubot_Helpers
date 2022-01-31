@@ -1,7 +1,5 @@
-from time import time
 import json
-from .ExtException import ExtException, CancelOperation
-import asyncio
+from time import time
 
 
 class Action:
@@ -70,73 +68,12 @@ class Action:
         return json.dumps(self.to_dict(), ensure_ascii=False)
         pass
 
-    def load(self, json_string):
+    @classmethod
+    def loads(cls, json_string):
         _tmp = json.loads(json_string)
-        self.name = _tmp.get('name')
-        # self.error = _tmp.get('error', None)
+        self = cls(_tmp.get('name'), _tmp.get('begin', None))
         self.result = _tmp.get('result', None)
-        self.begin = _tmp.get('begin', None)
         self.end = _tmp.get('end', None)
         self.time = _tmp.get('time', 0)
         self.stat = _tmp.get('stat', {})
         return self
-
-    def ext_exception(self, error, **kwargs):
-        kwargs['action'] = kwargs.get('action', self.name)
-        kwargs['parent'] = error
-        kwargs['skip_traceback'] = 1
-        _class = kwargs.get('exception_class', ExtException)
-        return _class(**kwargs)
-
-
-def async_action(f):
-    async def wrapper(*args, **kwargs):
-        try:
-            name = f'{args[0].__name__}.{f.__name__}'
-        except Exception:
-            try:
-                name = f'{args[0].__class__.__name__}.{f.__name__}'
-            except Exception:
-                name = f.__name__
-        action = Action(name)
-        try:
-            kwargs['_action'] = action
-            result = await f(*args, **kwargs)
-            result = action.add_stat(result)
-            if not isinstance(result, Action):
-                return result
-            return action.set_end(result)
-        except asyncio.CancelledError as err:
-            raise action.ext_exception(err, action=name, exception_class=CancelOperation)
-        except ExtException as err:
-            err = action.ext_exception(err, action=name)
-            raise err
-        except Exception as err:
-            raise action.ext_exception(err, action=name)
-
-    return wrapper
-
-
-def action(f):
-    def wrapper(*args, **kwargs):
-        try:
-            name = f'{args[0].__name__}.{f.__name__}'
-        except Exception:
-            try:
-                name = f'{args[0].__class__.__name__}.{f.__name__}'
-            except Exception:
-                name = f.__name__
-        action = Action(name)
-        try:
-            kwargs['_action'] = action
-            result = f(*args, **kwargs)
-            result = action.add_stat(result)
-            if not isinstance(result, Action):
-                return result
-            return action.set_end(result)
-        except ExtException as err:
-            raise action.ext_exception(err, action=name)
-        except Exception as err:
-            raise action.ext_exception(err, action=name)
-
-    return wrapper

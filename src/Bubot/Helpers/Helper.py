@@ -1,13 +1,13 @@
 import asyncio
-import inspect
-from .ExtException import ExtException, HandlerNotFoundError
-
 import copy
-from collections import OrderedDict
-from datetime import datetime, timedelta
+import inspect
 import json
 import os
 import re
+from collections import OrderedDict
+from datetime import datetime, timedelta
+
+from .ExtException import ExtException, HandlerNotFoundError
 
 
 class Helper:
@@ -37,7 +37,7 @@ class Helper:
         except ImportError as err:
             # ошибки в классе  или нет файла
             raise ExtException(
-                'Unable to import object',
+                message='Unable to import object',
                 detail=class_full_path,
                 action='Helper.get_class',
                 parent=err
@@ -64,8 +64,8 @@ class Helper:
             data = json.loads(data)
             _handler = Helper.get_class(f'{data["__module__"]}.{data["__name__"]}')
             return _handler(**data)
-        except ExtException as err:
-            return ExtException(data, action='Helper.loads_exception', parent=err)
+        except Exception as err:
+            return ExtException(dump=data, action='Helper.loads_exception', parent=err)
 
     @staticmethod
     def convert_ticks_to_datetime(ticks):
@@ -167,7 +167,8 @@ class Helper:
                     if sub_elem.tag in names_check["sub"]:
                         sub_checked = names_check["sub"][sub_elem.tag]
                     if item_name in sub_checked:
-                        raise ExtException('Дублирующиеся узлы в xml файле.', dump=sub_elem.tag + "." + item_name)
+                        raise ExtException(message='Дублирующиеся узлы в xml файле.',
+                                           dump=sub_elem.tag + "." + item_name)
                     sub_checked.append(item_name)
                     names_check["sub"][sub_elem.tag] = sub_checked
                     if sub_elem.tag not in array:
@@ -189,7 +190,8 @@ class Helper:
                 if array_mode:
                     # Тут просто проверям наличие одноименных узлов без атрибута "Имя".
                     if sub_elem.tag in names_check["main"]:
-                        raise ExtException('Дублирующиеся узлы в xml файле.', dump=sub_elem.tag + "." + item_name)
+                        raise ExtException(message='Дублирующиеся узлы в xml файле.',
+                                           dump=sub_elem.tag + "." + item_name)
                     names_check["main"].append(sub_elem.tag)
                     if isinstance(value, str):
                         d.append(value)
@@ -326,7 +328,6 @@ class ArrayHelper:
                 if uid not in index:
                     a.append(elem)
         return a
-
 
     @classmethod
     def detect_object_uid_prop(cls, data, object_uid_fields):

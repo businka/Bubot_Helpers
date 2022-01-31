@@ -1,7 +1,7 @@
 import json
-from os import path
 import sys
 import traceback
+from os import path
 
 
 # 3xxx - Ошибки в нашем коде
@@ -15,7 +15,8 @@ import traceback
 class ExtException(Exception):
     _code = 3000
     _http_code = 500
-    _message = "Unknown error"
+
+    # _message = "Unknown error"
 
     def __new__(cls, *args, **kwargs):
         parent = kwargs.get('parent')
@@ -26,39 +27,44 @@ class ExtException(Exception):
             # восстанавливаем из строки
         return super(ExtException, cls).__new__(cls, *args, **kwargs)
 
-    def __init__(self, *args, **kwargs):
-        self.skip_traceback = kwargs.get('skip_traceback', 0)
-        self.code = ''
-        self.message = ''
-        self.detail = ''
-        self.action = ''
-        self.dump = {}
+    def __init__(self, *, parent=None, code=None, message=None, detail=None, action=None, dump=None, skip_traceback=0):
+        self.skip_traceback = skip_traceback
+        self.code = code
+        self.message = message
+        self.detail = detail
+        self.dump = {} if dump is None else dump
+
+        if action and not isinstance(action, str):  # это класс действте
+            self.add_action_to_stack(action)
+        else:
+            self.action = action
+
         self.stack = []
-        self.new_msg = False
-        parent = kwargs.get('parent')
+        self.new_msg = bool(message)
         if parent and isinstance(parent, ExtException):  # прокидываем ошибку наверх
             self.add_parent_to_stack(parent)
-            self.message = parent.message
-            self.code = parent.code
-            self.detail = parent.detail
-            self.new_msg = bool(kwargs.get('message'))
-        self.init_from_dict(kwargs)
+            if not message:
+                self.message = parent.message
+                self.detail = parent.detail
+                self.code = parent.code
         if parent and isinstance(parent, Exception) and not isinstance(parent, ExtException):
-            self.code = self._code
-            self.message = self._message
-            if not self.detail:
-                self.detail = str(parent
-                                  )
+            if not message:
+                self.message = 'Unknown Error'
+            if not detail:
+                self.detail = str(parent)
             self.add_sys_exc_to_stack()
-        if args:
-            if isinstance(args[0], str):
-                self.new_msg = True
-                self.message = args[0]
-            else:
-                raise Exception(f'Not supported ExtException args[0] ({type(args[0])})')
         if not self.stack:
             self.add_sys_exc_to_stack()
         pass
+
+    def add_action_to_stack(self, action):
+        try:
+            self.action = action.name
+            if action.stat:
+                action.set_end('Error')
+                self.dump['_action_stat'] = action.stat
+        except:
+            pass
 
     def add_parent_to_stack(self, parent):
         if not isinstance(parent, ExtException):
@@ -97,23 +103,21 @@ class ExtException(Exception):
         return {
             'message': exc_info[0].__name__,
             'detail': str(exc_info[1]),
-            'traceback': f'{path.basename(last_call.filename)}, {last_call.name}, line {last_call.lineno}'
+            'traceback': f'{path.basename(path.dirname(last_call.filename))}/{path.basename(last_call.filename)}, '
+                         f'{last_call.name}, line {last_call.lineno}'
         }
-
-    def init_from_dict(self, data):
-        for field in ['code', 'message', 'detail', 'action', 'dump', 'stack']:
-            if field in data:
-                setattr(self, field, data[field])
-        if not self.message:
-            self.message = self._message
-        if not self.code:
-            self.code = self._code
 
     @property
     def title(self):
+        title = ''
+        if self.code:
+            title += f'{self.code}:'
+
+        title += f'{self.__class__.__name__} {self.message}'
+
         if self.detail:
-            return f'{self.code}: {self.message} - {self.detail}'
-        return f'{self.code}: {self.message}'
+            title += f' - {self.detail}'
+        return title
 
     def __str__(self):
         res = f'{self.title}'
@@ -176,6 +180,11 @@ class KeyNotFound(ExtException):
     _message = "Required parameter are missing"
 
 
+class WaitingUserAction(ExtException):
+    _code = 4911
+    _message = "Waiting for user action"
+
+
 class AccessDenied(ExtException):
     _code = 4031
     _http_code = 403
@@ -187,7 +196,7 @@ class CancelOperation(ExtException):
     _message = "Cancel operation",
 
 
-class NotAvailableError(ExtException):
+class NotAvailable(ExtException):
     _code = 5000
     _message = "Not available",
 
