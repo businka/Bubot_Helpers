@@ -180,6 +180,11 @@ class KeyNotFound(ExtException):
     _message = "Required parameter are missing"
 
 
+class NotFound(ExtException):
+    _code = 4300
+    _message = "Not found"
+
+
 class WaitingUserAction(ExtException):
     _code = 4911
     _message = "Waiting for user action"
