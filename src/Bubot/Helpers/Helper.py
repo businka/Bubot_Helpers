@@ -47,15 +47,16 @@ class Helper:
             # Нет такого класса
             # raise AttributeError('get_class({0}: {1})'.format(class_full_path, str(e)))
             raise ExtException(
-                'Object not found',
+                message='Object not found',
                 detail=class_full_path,
                 action='Helper.get_class'
             )
         except Exception as err:
             raise ExtException(
-                'Unable to import object',
+                message='Unable to import object',
                 detail=class_full_path,
-                action='Helper.get_class'
+                action='Helper.get_class',
+                parent=err
             )
 
     @classmethod

@@ -15,6 +15,7 @@ from os import path
 class ExtException(Exception):
     _code = 3000
     _http_code = 500
+    _message = None
 
     # _message = "Unknown error"
 
@@ -55,6 +56,8 @@ class ExtException(Exception):
             self.add_sys_exc_to_stack()
         if not self.stack:
             self.add_sys_exc_to_stack()
+        if not self.message:
+            self.message = self._message
         pass
 
     def add_action_to_stack(self, action):
@@ -100,9 +103,15 @@ class ExtException(Exception):
             return None
         last_call = traceback.extract_tb(exc_info[2], limit=self.skip_traceback + 1)
         last_call = last_call[self.skip_traceback]
+        if isinstance(exc_info[1], ExtException):
+            message = getattr(exc_info[1], 'message')
+            detail = getattr(exc_info[1], 'detail')
+        else:
+            message = exc_info[0].__name__
+            detail = str(exc_info[1])
         return {
-            'message': exc_info[0].__name__,
-            'detail': str(exc_info[1]),
+            'message': message,
+            'detail': detail,
             'traceback': f'{path.basename(path.dirname(last_call.filename))}/{path.basename(last_call.filename)}, '
                          f'{last_call.name}, line {last_call.lineno}'
         }
