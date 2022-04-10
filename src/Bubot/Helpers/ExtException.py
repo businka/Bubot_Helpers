@@ -189,6 +189,17 @@ class KeyNotFound(ExtException):
     _message = "Required parameter are missing"
 
 
+class TooManyRequests(ExtException):
+    _code = 4290
+    _message = "Too Many Requests"
+    # dump
+    # X-RateLimit-Limit - количество запросов, которые равномерно можно сделать в течение интервала до появления 429 ошибки
+    # X-Lognex-Retry-TimeInterval - интервал в миллисекундах, в течение которого можно сделать эти запросы
+    # X-RateLimit-Remaining - Число запросов, которые можно отправить до получения 429 ошибки
+    # X-Lognex-Reset - время до сброса ограничения в миллисекундах. Равно нулю, если ограничение не установлено
+    # X-Lognex-Retry-After - время до сброса ограничения в миллисекундах.
+
+
 class NotFound(ExtException):
     _code = 4300
     _message = "Not found"

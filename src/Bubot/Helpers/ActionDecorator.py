@@ -17,10 +17,11 @@ def async_action(f):
         try:
             kwargs['_action'] = _action
             result = await f(*args, **kwargs)
-            result = _action.add_stat(result)
-            if not isinstance(result, Action):
-                return result
-            return _action.set_end(result)
+            if isinstance(result, Action):
+                result = _action.add_stat(result)
+            _action.set_end(result)
+            return _action
+
         except asyncio.CancelledError as err:
             raise err from err
         except ExtException as err:
