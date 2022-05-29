@@ -3,10 +3,11 @@ from time import time
 
 
 class Action:
-    def __init__(self, name=None, begin=True):
+    def __init__(self, name=None, begin=True, *, group='other'):
         self.name = name
         self.param = {}
         # self.error = None
+        self.group = group
         self.result = None
         self.begin = None
         self.end = None
@@ -29,23 +30,32 @@ class Action:
         if result is not None:
             self.result = result
         if self.name:
-            self.update_stat(self.name, [self.total_time - self.time, 1])
+            self.update_stat(self.name, [self.total_time - self.time, 1], self.group)
         return self
 
     def add_stat(self, action):
         if not isinstance(action, Action):
             return action
-        for elem in action.stat:
-            self.update_stat(elem, action.stat[elem])
+        if hasattr(action, 'group'):
+            for group in action.stat:
+                for elem in action.stat[group]:
+                    self.update_stat(elem, action.stat[group][elem], group)
+        else:
+            for elem in action.stat:
+                self.update_stat(elem, action.stat[elem])
+
         return action.result
 
-    def update_stat(self, name, stat):
+    def update_stat(self, name, stat, group='other'):
+
         self.time += stat[0]
-        if name not in self.stat:
-            self.stat[name] = stat
+        if group not in self.stat:
+            self.stat[group] = {}
+        if name not in self.stat[group]:
+            self.stat[group][name] = stat
         else:
-            self.stat[name][1] += stat[1]
-            self.stat[name][0] += stat[0]
+            self.stat[group][name][1] += stat[1]
+            self.stat[group][name][0] += stat[0]
         pass
 
     # def __bool__(self):

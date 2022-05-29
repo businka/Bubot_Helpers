@@ -36,7 +36,8 @@ class ExtException(Exception):
         self.dump = {} if dump is None else dump
 
         if action and not isinstance(action, str):  # это класс действте
-            self.add_action_to_stack(action)
+            # self.add_action_to_stack(action)
+            self.action = action.name
         else:
             self.action = action
 

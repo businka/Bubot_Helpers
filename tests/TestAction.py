@@ -1,32 +1,26 @@
 import unittest
-from Bubot.Helpers.Helper import Helper
+from Bubot.Helpers.Action import Action
+import time
 
 
-class TestUpdateDict(unittest.TestCase):
-    def test_update_string_array(self):
-        a = {'t': ['a1', 'a2', 'a3']}
-        b = {'t': ['a1', 'a4', 'a3']}
-        res = Helper.update_dict(a, b)
-        self.assertEqual(len(res['t']), 4)
+class TestAction(unittest.TestCase):
+    def test_action(self):
+        res = 1
+        a1 = Action('a1', group='1')
+        b1 = Action('b1', group='1')
+        a2 = Action('a2', group='2')
+        b2 = Action('b2', group='2')
+        time.sleep(0.2)
+        res += a2.add_stat(b2.set_end(res))
+        time.sleep(0.2)
+        res += b1.add_stat(a2.set_end(res))
+        time.sleep(0.2)
+        res += a1.add_stat(b1.set_end(res))
+        time.sleep(0.2)
+        a1.set_end(res)
+        self.assertEqual(8, a1.result)
+        self.assertEqual(2, len(list(a1.stat.keys())))
+        self.assertEqual(2, len(list(a1.stat['2'].keys())))
+        self.assertEqual(2, len(list(a1.stat['1'].keys())))
         pass
 
-    def test_update_object_array(self):
-        a = {'t': [{'id': 'a1', 'name': 'тест'}, {'id': 'a2', 'name': 'тест'}]}
-        b = {'t': [{'id': 'a3', 'name': 'тест'}, {'id': 'a2', 'name': 'тест'}]}
-        res = Helper.update_dict(a, b)
-        self.assertEqual(len(res['t']), 3)
-        pass
-
-    def test_1(self):
-        a = {'/oic/con': {
-            'rt': ['oic.wk.con', 'bubot.con', 'bubot.VirtualServer.con'], 'if': ['oic.if.baseline'],
-            'p': {'bm': 3}, 'logLevel': 'info', 'udpCoapPort': 0, 'udpCoapIPv4': True,
-            'udpCoapIPv6': False, 'udpCoapIPv4Ssl': False, 'udpCoapIPv6Ssl': False, 'listening': [],
-            'observed': [], 'running_devices': [], 'port': 80}}
-        b = {'/oic/d': {'di': '7f9a4170-8c4e-4ca4-939a-70d91a1393b1'}, '/oic/con': {'udpCoapPort': 64682,
-                                                                                    'running_devices': [{
-                                                                                        'di': '6e356439-104d-4f79-8b78-aed3666463d9',
-                                                                                        'dmno': 'SerialServerHF511',
-                                                                                        'n': 'Serial server HF511A'}]}}
-        res = Helper.update_dict(a, b)
-        pass

@@ -7,6 +7,7 @@ import re
 from collections import OrderedDict
 from datetime import datetime, timedelta
 
+from .ArrayHelper import ArrayHelper
 from .ExtException import ExtException, HandlerNotFoundError
 
 
@@ -34,30 +35,15 @@ class Helper:
             for comp in parts[1:]:
                 m = getattr(m, comp)
             return m
-        except ImportError as err:
+        except ImportError as e:
             # ошибки в классе  или нет файла
-            raise ExtException(
-                message='Unable to import object',
-                detail=class_full_path,
-                action='Helper.get_class',
-                parent=err
-
-            )
-        except AttributeError as err:
+            raise ImportError(f'get_class({class_full_path}: {str(e)}')
+        except AttributeError as e:
             # Нет такого класса
-            # raise AttributeError('get_class({0}: {1})'.format(class_full_path, str(e)))
-            raise ExtException(
-                message='Object not found',
-                detail=class_full_path,
-                action='Helper.get_class'
-            )
-        except Exception as err:
-            raise ExtException(
-                message='Unable to import object',
-                detail=class_full_path,
-                action='Helper.get_class',
-                parent=err
-            )
+            raise AttributeError(f'get_class({class_full_path}: {str(e)}')
+        except Exception as e:
+            # ошибки в классе
+            raise Exception(f'get_class({class_full_path}: {str(e)}')
 
     @classmethod
     def loads_exception(cls, data):
@@ -209,7 +195,7 @@ class Helper:
 
     @classmethod
     def update_element_in_dict(cls, _data, _path, _value):
-        _num = re.compile('^\d+$')
+        _num = re.compile(r'^\d+$')
         _path = _path.split('.')
         current = _data
         size = len(_path)
@@ -220,6 +206,20 @@ class Helper:
                 current[elem] = _value
             else:
                 current = current[elem]
+
+    @classmethod
+    def get_element_in_dict(cls, _data, _path, default=None):
+        _num = re.compile(r'^\d+$')
+        _path = _path.split('.')
+        current = _data
+        try:
+            for i, elem in enumerate(_path):
+                if _num.match(elem):
+                    elem = int(elem)
+                current = current[elem]
+        except KeyError:
+            return default
+        return current
 
     @classmethod
     def compare(cls, base, new):
@@ -281,11 +281,60 @@ class Helper:
         cache['{0}_{1}'.format(_type, current_class.__name__)] = Helper.update_dict({}, schema)
         return schema
 
+    @staticmethod
+    def copy_via_json(config):
+        return json.loads(json.dumps(config))
+
+    @staticmethod
+    def to_camel_case(text):
+        s = text.replace("-", " ").replace("_", " ")
+        s = s.split()
+        if len(text) == 0:
+            return text
+        return ''.join(i.capitalize() for i in s)
+
+    @staticmethod
+    def obj_get_path_value(obj, obj_path, **kwargs):
+        delimiter = kwargs.get('delimiter', '.')
+
+        _path = obj_path.split(delimiter)
+        _obj = obj
+        try:
+            i = 0
+            size = len(_path)
+            while i < size:
+                elem = _path[i]
+                if isinstance(_obj, dict):
+                    _obj = _obj.get(elem)
+                elif isinstance(_obj, list):
+                    if elem.isnumeric():  # это число
+                        _obj = _obj[int(elem)]
+                    else:  # конструкция для поиски значения в таблице
+                        # первое значение имя поля по которому ищем, следующее его значение
+                        # получаем в контекст объкт строки таблицы
+                        index = ArrayHelper.find_by_key(_obj, _path[i + 1], elem)
+                        if index >= 0:
+                            _obj = _obj[index]
+                            i += 1
+                        else:
+                            return None
+                else:
+                    None
+                if not _obj:
+                    break
+                i += 1
+            return _obj
+
+        except AttributeError:
+            if obj:
+                raise Exception(f'obj_get_path_value: not object')
+            else:
+                raise Exception(f'Object obj_get_path_value: not defined')
+
 
 def async_test(f):
     def wrapper(*args, **kwargs):
         loop = asyncio.get_event_loop()
-        # kwargs['loop'] = loop
         if inspect.iscoroutinefunction(f):
             future = f(*args, **kwargs)
         else:
@@ -298,66 +347,3 @@ def async_test(f):
 
 def convert_ticks_to_datetime(ticks):
     return datetime(1, 1, 1) + timedelta(microseconds=ticks // 10)
-
-
-class ArrayHelper:
-    # делаем список уникальных записей, объединяемые массивы должны быть однотипными
-    # списки объектов объединаются по ключевому полю которое есть в первой записи списка
-    default_object_uid_props = ['_id', 'id', 'di', 'title', 'name', 'n']
-
-    @classmethod
-    def unique_extend(cls, a, b, **kwargs):
-        if not len(a):
-            a.extend(b)
-            return a
-        if not len(b):
-            return a
-        if isinstance(a[0], str):
-            for elem in b:
-                if elem not in a:
-                    a.append(elem)
-            return a
-        if isinstance(a[0], dict):
-            object_uid_prop = cls.detect_object_uid_prop(a, kwargs.get('object_uid', cls.default_object_uid_props))
-            if object_uid_prop is None:
-                c = copy.deepcopy(b)
-                a.extend(c)
-                return a
-            index = cls.index_list(a, object_uid_prop)
-            for elem in b:
-                uid = elem.get(object_uid_prop)
-                if uid not in index:
-                    a.append(elem)
-        return a
-
-    @classmethod
-    def detect_object_uid_prop(cls, data, object_uid_fields):
-        for _key in object_uid_fields:
-            if _key in data[0]:
-                return _key
-        return None
-
-    @classmethod
-    def update(cls, items, item, field='id'):
-        for i in range(len(items)):
-            if items[i][field] == item[field]:
-                items[i] = item
-                return
-        items.append(item)
-
-    @classmethod
-    def index_list(cls, items, field='id'):
-        res = {}
-        for index in range(len(items)):
-            try:
-                res[items[index][field]] = index
-            except KeyError:
-                pass
-        return res
-
-    @classmethod
-    def find(cls, items, value, field='id'):
-        for i in range(len(items)):
-            if items[i][field] == value:
-                return i
-        return -1

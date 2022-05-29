@@ -5,7 +5,7 @@ from .ExtException import ExtException
 
 
 def async_action(f):
-    async def wrapper(*args, **kwargs):
+    def prepare_action(args, kwargs):
         try:
             name = f'{args[0].__name__}.{f.__name__}'
         except Exception:
@@ -14,8 +14,12 @@ def async_action(f):
             except Exception:
                 name = f.__name__
         _action = Action(name)
+        kwargs['_action'] = _action
+        return _action
+
+    async def wrapper(*args, **kwargs):
+        _action = prepare_action(args, kwargs)
         try:
-            kwargs['_action'] = _action
             result = await f(*args, **kwargs)
             if isinstance(result, Action):
                 result = _action.add_stat(result)
