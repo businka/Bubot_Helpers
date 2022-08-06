@@ -238,6 +238,12 @@ class ExtTimeoutError(ExtException):
     _message = "Timeout",
 
 
+class ExtNotImplemented(ExtException):
+    _code = 8000
+    _http_code = 400
+    _message = "Not implemented",
+
+
 def dumps_error(err):
     return json.dumps({
         '__name__': err.__class__.__name__,
