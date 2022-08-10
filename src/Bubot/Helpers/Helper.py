@@ -294,19 +294,25 @@ class Helper:
         return ''.join(i.capitalize() for i in s)
 
     @staticmethod
-    def obj_set_path_value(obj, obj_path, value, *, delimiter='.', skip_if_none=False, serializer=None):
+    def obj_set_path_value(obj, obj_path, value, *, delimiter=None, skip_if_none=False, serializer=None):
         if skip_if_none and value is None:
             return
         if serializer:
             value = serializer(value)
-        _path = obj_path.split(delimiter)
-        obj = Helper.obj_get_path_value(obj, _path[:-1], delimiter=delimiter)
-        obj[_path[-1]] = value
+        if delimiter:
+            _path = obj_path.split(delimiter)
+            obj = Helper.obj_get_path_value(obj, _path[:-1], delimiter=delimiter)
+            obj[_path[-1]] = value
+        else:
+            obj[obj_path] = value
 
     @staticmethod
-    def obj_get_path_value(obj, obj_path, *, delimiter='.'):
+    def obj_get_path_value(obj, obj_path, *, delimiter=None):
         if isinstance(obj_path, str):
-            _path = obj_path.split(delimiter)
+            if delimiter:
+                _path = obj_path.split(delimiter)
+            else:
+                _path = [obj_path]
         else:
             _path = obj_path
         _obj = obj
