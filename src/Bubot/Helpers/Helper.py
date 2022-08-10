@@ -5,7 +5,7 @@ import json
 import os
 import re
 from collections import OrderedDict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from .ArrayHelper import ArrayHelper
 from .ExtException import ExtException, HandlerNotFoundError
@@ -364,3 +364,7 @@ def async_test(f):
 
 def convert_ticks_to_datetime(ticks):
     return datetime(1, 1, 1) + timedelta(microseconds=ticks // 10)
+
+
+def get_tzinfo(timezone_offset=+3.0):
+    return timezone(timedelta(hours=timezone_offset))
