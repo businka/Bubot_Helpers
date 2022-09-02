@@ -100,14 +100,14 @@ class Helper:
                     _msg = str(e)
                     _elem = element
                 raise ExtException(
-                    e,
+                    parent=e,
                     action='Helper.update_dict',
                     detail='{1} - {0}'.format(_msg, _elem),
                     dump={
                         'element': _elem})
             except Exception as e:
                 raise ExtException(
-                    605,
+                    parent=e,
                     action='Helper.update_dict',
                     detail='{0}({1})'.format(e, element),
                     dump={
@@ -143,7 +143,7 @@ class Helper:
                 element = sub_elem.tag + (
                     "." + sub_elem.get('Имя') if this_array else "") + "." + error.detail if hasattr(
                     error, 'detail') else ''
-                raise ExtException(error, dump={'element': element})
+                raise ExtException(parent=error, dump={'element': element})
             if this_array:
                 item_name = sub_elem.get('Имя')
                 if array_mode:
