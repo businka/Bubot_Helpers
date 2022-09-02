@@ -28,7 +28,5 @@ setuptools.setup(
     ],
     python_requires='>=3.7',
     zip_safe=False,
-    install_requires=[
-        'Bubot_Helpers>=0.0.17'
-    ]
+    install_requires=[]
 )

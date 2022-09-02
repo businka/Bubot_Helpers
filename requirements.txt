@@ -1,2 +1,1 @@
 twine
-Bubot_Helpers>=0.0.17
