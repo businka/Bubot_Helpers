@@ -70,14 +70,17 @@ class Helper:
             return result
 
     @staticmethod
-    def _update_dict(base, new):
+    def _update_dict(base, new, _path=''):
         if not new:
             return base
         for element in new:
             try:
                 if element in base and base[element] is not None:
                     if isinstance(new[element], dict):
-                        base[element] = Helper._update_dict(base[element], new[element])
+                        if isinstance(base[element], dict):
+                            base[element] = Helper._update_dict(base[element], new[element], f'{_path}.{element}')
+                        else:
+                            raise ExtException(message='type mismatch', detail=f'{_path}.{element}')
                     elif isinstance(new[element], list):
                         base[element] = ArrayHelper.unique_extend(base[element], new[element])
                     else:
@@ -91,25 +94,12 @@ class Helper:
                                 element: copy.deepcopy(new[element])
                             }
                         else:
-                            raise Exception('Непредвиденная ситуация при ')
-            except ExtException as e:
-                try:
-                    _elem = '{0}.{1}'.format(element, e.stack[len(e.stack) - 1]['dump']['element'])
-                    _msg = e.stack[0]['dump']['message']
-                except ExtException:
-                    _msg = str(e)
-                    _elem = element
-                raise ExtException(
-                    parent=e,
-                    action='Helper.update_dict',
-                    detail='{1} - {0}'.format(_msg, _elem),
-                    dump={
-                        'element': _elem})
+                            raise NotImplementedError()
             except Exception as e:
                 raise ExtException(
                     parent=e,
                     action='Helper.update_dict',
-                    detail='{0}({1})'.format(e, element),
+                    detail='{0}({1})'.format(e, _path),
                     dump={
                         'element': element,
                         'message': str(e)
