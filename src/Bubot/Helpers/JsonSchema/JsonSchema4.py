@@ -8,9 +8,9 @@ from Bubot.Helpers.Helper import Helper
 
 
 class JsonSchemaLoaderMixin:
-    def __init__(self, **kwargs):
-        self.dir = kwargs.get('dir', ['{}/OcfSchema'.format(path.normpath(path.dirname(__file__)))])
-        self.cache = kwargs.get('cache', {})
+    def __init__(self, *, loader=None, cache=None):
+        self.loader = self.loader if loader is None else loader
+        self.cache = {} if cache is None else cache
         self.data = {}
         self.id = None
         self.uri = None
@@ -23,7 +23,7 @@ class JsonSchemaLoaderMixin:
             _id = self.get_id_from_uri(uri, self.id)
 
             if _id not in self.cache:
-                JsonSchema4.load_from_file(_id, dir=self.dir, cache=self.cache)
+                JsonSchema4.load_from_file(_id, loader=self.loader, cache=self.cache)
             if not uri[5]:
                 try:
                     return self.cache[_id]['data']
@@ -42,25 +42,26 @@ class JsonSchemaLoaderMixin:
                 parent=err) from err
 
     @classmethod
-    def load_from_file(cls, file_name, **kwargs):
+    def load_from_file(cls, file_name, *, loader=None, cache=None):
         try:
-            self = cls(**kwargs)
+            self = cls(loader=loader, cache=cache)
             _path = None
-            for _dir in self.dir:
-                _path = '{0}/{1}'.format(_dir, file_name)
-                if os.path.isfile(_path):
-                    break
-                else:
-                    _path = None
-            if _path is None:
-                raise ExtException(message='Json schema file not found', detail=file_name)
-
-            with open(_path, 'r', encoding='utf-8') as file:
-                try:
-                    raw = json.load(file)
-                except Exception as err:
-                    raise ExtException(message='JsonSchema not load from file',
-                                       detail=f'{file_name} {str(err)}') from err
+            raw = self.loader.load(file_name)
+            # for _dir in self.dir:
+            #     _path = '{0}/{1}'.format(_dir, file_name)
+            #     if os.path.isfile(_path):
+            #         break
+            #     else:
+            #         _path = None
+            # if _path is None:
+            #     raise ExtException(message='Json schema file not found', detail=file_name)
+            #
+            # with open(_path, 'r', encoding='utf-8') as file:
+            #     try:
+            #         raw = json.load(file)
+            #     except Exception as err:
+            #         raise ExtException(message='JsonSchema not load from file',
+            #                            detail=f'{file_name} {str(err)}') from err
             self.load(raw)
             return self.cache[self.id]['data']
         except Exception as err:
@@ -80,14 +81,17 @@ class JsonSchemaLoaderMixin:
     @staticmethod
     def get_id_from_uri(uri, default=None):
         if uri[2]:
-            return uri[2].split('/')[-1]
+            return uri[2].split('/')[-1][:-5]
         elif default:
             return default
         raise Exception('not define scheme id')
 
     def load(self, schema):
         try:
-            self.version = urllib.parse.urlparse(schema['$schema'])[2].split('/')[0]
+            try:
+                self.version = urllib.parse.urlparse(schema['$schema'])[2].split('/')[0]
+            except KeyError:
+                self.version = 4
             self.id = self.get_id_from_uri(urllib.parse.urlparse(schema['id']))
             self.cache[self.id] = dict(data=dict(), definitions=dict())
             if 'definitions' in schema:
