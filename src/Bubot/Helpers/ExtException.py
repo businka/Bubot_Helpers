@@ -25,6 +25,22 @@ class ExtException(Exception):
             # прокидываем ошибку наверх
             if isinstance(parent, ExtException) and parent.__class__ != ExtException and cls == ExtException:
                 return parent.__class__(*args, **kwargs)
+            if isinstance(parent, dict):
+                class_name = parent.pop('__name__', None)
+                module_name = parent.pop('__module__', None)
+                if class_name and module_name:
+                    try:
+                        m = __import__(module_name)
+                        parts = f'{module_name}.{class_name}'.split('.')
+                        for comp in parts[1:]:
+                            m = getattr(m, comp)
+                        stack = parent.pop('stack', [])
+                        error = m(**parent)
+                        error.stack = stack
+                        if isinstance(error, ExtException):
+                            return error
+                    finally:
+                        pass
             # восстанавливаем из строки
         return super(ExtException, cls).__new__(cls, *args, **kwargs)
 
