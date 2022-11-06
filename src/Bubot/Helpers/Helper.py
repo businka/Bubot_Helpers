@@ -80,7 +80,11 @@ class Helper:
                         if isinstance(base[element], dict):
                             base[element] = Helper._update_dict(base[element], new[element], f'{_path}.{element}')
                         else:
-                            raise ExtException(message='type mismatch', detail=f'{_path}.{element}')
+                            raise ExtException(
+                                message='type mismatch',
+                                detail=f'{type(base[element])} in {_path}.{element}',
+                                dump={'value': str(base[element])}
+                            )
                     elif isinstance(new[element], list):
                         base[element] = ArrayHelper.unique_extend(base[element], new[element])
                     else:
@@ -95,9 +99,11 @@ class Helper:
                             }
                         else:
                             raise NotImplementedError()
-            except Exception as e:
+            except ExtException as err:
+                raise ExtException(parent=err) from err
+            except Exception as err:
                 raise ExtException(
-                    parent=e,
+                    parent=err,
                     action='Helper.update_dict',
                     detail='{0}({1})'.format(e, _path),
                     dump={

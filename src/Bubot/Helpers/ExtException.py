@@ -49,6 +49,7 @@ class ExtException(Exception):
         self.code = code
         self.message = message
         self.detail = detail
+
         self.dump = {} if dump is None else dump
 
         if action and not isinstance(action, str):  # это класс действте
@@ -65,6 +66,7 @@ class ExtException(Exception):
                 self.message = parent.message
                 self.detail = parent.detail
                 self.code = parent.code
+                self.dump = parent.dump
         if parent and isinstance(parent, Exception) and not isinstance(parent, ExtException):
             if not message:
                 self.message = 'Unknown Error'
