@@ -23,9 +23,12 @@ class ExtException(Exception):
         parent = kwargs.get('parent')
         if parent:
             # прокидываем ошибку наверх
-            if isinstance(parent, ExtException) and parent.__class__ != ExtException and cls == ExtException:
-                return parent.__class__(*args, **kwargs)
-            if isinstance(parent, dict):
+            if isinstance(parent, ExtException) \
+                    and parent.__class__ != ExtException \
+                    and kwargs.get('message') is None \
+                    and cls == ExtException:
+                return super().__new__(parent.__class__)
+            if isinstance(parent, dict):  # пытаемся поднять правильный класс
                 class_name = parent.pop('__name__', None)
                 module_name = parent.pop('__module__', None)
                 if class_name and module_name:
@@ -34,23 +37,20 @@ class ExtException(Exception):
                         parts = f'{module_name}.{class_name}'.split('.')
                         for comp in parts[1:]:
                             m = getattr(m, comp)
-                        stack = parent.pop('stack', [])
-                        error = m(**parent)
-                        error.stack = stack
-                        if isinstance(error, ExtException):
-                            return error
-                    finally:
+                        return super().__new__(m)
+                    except:
                         pass
-            # восстанавливаем из строки
-        return super(ExtException, cls).__new__(cls, *args, **kwargs)
+        return super().__new__(cls)
 
-    def __init__(self, *, parent=None, code=None, message=None, detail=None, action=None, dump=None, skip_traceback=0):
+    def __init__(self, *, parent=None, code=None, message=None, detail=None, action=None, dump=None,
+                 skip_traceback=0, stack=None):
         self.skip_traceback = skip_traceback
         self.code = code
         self.message = message
         self.detail = detail
 
         self.dump = {} if dump is None else dump
+        self.stack = [] if stack is None else stack
 
         if action and not isinstance(action, str):  # это класс действте
             # self.add_action_to_stack(action)
@@ -58,21 +58,31 @@ class ExtException(Exception):
         else:
             self.action = action
 
-        self.stack = []
         self.new_msg = bool(message)
-        if parent and isinstance(parent, ExtException):  # прокидываем ошибку наверх
-            self.add_parent_to_stack(parent)
-            if not message:
-                self.message = parent.message
-                self.detail = parent.detail
-                self.code = parent.code
-                self.dump = parent.dump
-        if parent and isinstance(parent, Exception) and not isinstance(parent, ExtException):
-            if not message:
-                self.message = 'Unknown Error'
-            if not detail:
-                self.detail = str(parent)
-            self.add_sys_exc_to_stack()
+        if parent:
+            if isinstance(parent, ExtException):  # прокидываем ошибку наверх
+                self.add_parent_to_stack(parent)
+                if not message:
+                    self.message = parent.message
+                    self.detail = parent.detail
+                    self.code = parent.code
+                    self.dump = parent.dump
+            elif isinstance(parent, Exception):
+                if not message:
+                    self.message = 'Unknown Error'
+                if not detail:
+                    self.detail = str(parent)
+                self.add_sys_exc_to_stack()
+            elif isinstance(parent, dict):
+                self.code = parent.get('code', self._code)
+                self.message = parent.get('message')
+                self.detail = parent.get('detail')
+                self.dump = parent.get('dump', {})
+                self.stack = parent.get('stack', [])
+                self.action = parent.get('action')
+
+            else:
+                raise NotImplementedError(f'ExtException parent={type(parent)}')
         if not self.stack:
             self.add_sys_exc_to_stack()
         if not self.message:
