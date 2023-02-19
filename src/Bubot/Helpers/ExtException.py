@@ -104,17 +104,21 @@ class ExtException(Exception):
         self.stack += parent.stack
         if not parent.action:
             return
-        parent.dump['action'] = parent.action
         if not self.stack:
             data = self.get_sys_exc_info()
             if data:
                 parent.dump['traceback'] = data['traceback']
 
+        _stack = {
+            'action': parent.action
+        }
         if parent.new_msg:
-            parent.dump['message'] = parent.message
+            _stack['message'] = parent.message
             if parent.detail:
-                parent.dump['detail'] = parent.detail
-        self.stack.append(parent.dump)
+                _stack['detail'] = parent.detail
+        if parent.dump:
+            _stack['dump'] = parent.dump
+        self.stack.append(_stack)
 
     def add_sys_exc_to_stack(self):
         try:
@@ -123,7 +127,8 @@ class ExtException(Exception):
             return
         if not data:
             return
-        data['action'] = self.action
+        if self.action:
+            data['action'] = self.action
         self.stack.append(data)
 
     def get_sys_exc_info(self):
@@ -151,7 +156,8 @@ class ExtException(Exception):
         if self.code:
             title += f'{self.code}:'
 
-        title += f'{self.__class__.__name__} {self.message}'
+        # title += f'{self.__class__.__name__} {self.message}'
+        title += self.message
 
         if self.detail:
             title += f' - {self.detail}'
@@ -160,7 +166,9 @@ class ExtException(Exception):
     def __str__(self):
         res = f'{self.title}'
         if self.dump:
-            res += f'\nDump: action={self.action}; '
+            res += f'\nDump: '
+            if self.action:
+                res += f'action={self.action}; '
             for elem in self.dump:
                 res += f'{elem}={self.dump[elem]}; '
         if self.stack:
