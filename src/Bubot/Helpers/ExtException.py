@@ -154,10 +154,11 @@ class ExtException(Exception):
     def title(self):
         title = ''
         if self.code:
-            title += f'{self.code}:'
+            title += f'{self.code}: '
 
         # title += f'{self.__class__.__name__} {self.message}'
-        title += self.message
+        if self.message:
+            title += str(self.message)
 
         if self.detail:
             title += f' - {self.detail}'
@@ -203,7 +204,7 @@ class ExtException(Exception):
 
 class HandlerNotFoundError(ExtException):
     _code = 3100
-    _message = "Handler not found",
+    _message = "Handler not found"
 
 
 class UserError(ExtException):
@@ -255,29 +256,29 @@ class AccessDenied(ExtException):
 
 class CancelOperation(ExtException):
     _code = 4999
-    _message = "Cancel operation",
+    _message = "Cancel operation"
 
 
 class NotAvailable(ExtException):
     _code = 5000
-    _message = "Not available",
+    _message = "Not available"
 
 
 class ForeignError(ExtException):
     _code = 6000
-    _message = "Unknown external error",
+    _message = "Unknown external error"
 
 
 class ExtTimeoutError(ExtException):
     _code = 5008
     _http_code = 408
-    _message = "Timeout",
+    _message = "Timeout"
 
 
 class ExtNotImplemented(ExtException):
     _code = 8000
     _http_code = 400
-    _message = "Not implemented",
+    _message = "Not implemented"
 
 
 def dumps_error(err):
