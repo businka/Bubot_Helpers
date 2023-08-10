@@ -36,7 +36,7 @@ class Helper:
                 m = getattr(m, comp)
             return m
         except ImportError as e:
-            # ошибки в классе  или нет файла
+            # ошибки в классе или нет файла
             raise ImportError(f'get_class({class_full_path}: {str(e)}')
         except AttributeError as e:
             # Нет такого класса

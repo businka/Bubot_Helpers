@@ -104,14 +104,14 @@ class ExtException(Exception):
         self.stack += parent.stack
         if not parent.action:
             return
-        if not self.stack:
-            data = self.get_sys_exc_info()
-            if data:
-                parent.dump['traceback'] = data['traceback']
-
         _stack = {
             'action': parent.action
         }
+        if not self.stack:
+            data = self.get_sys_exc_info()
+            if data:
+                _stack['traceback'] = data['traceback']
+
         if parent.new_msg:
             _stack['message'] = parent.message
             if parent.detail:
