@@ -1,15 +1,12 @@
-import json
-import os.path
 import urllib.parse
-from os import path
 
-from Bubot.Helpers.ExtException import ExtException
-from Bubot.Helpers.Helper import Helper
+from .ExtException import ExtException
+from .Helper import Helper
 
 
-class JsonSchemaLoaderMixin:
-    def __init__(self, *, loader=None, cache=None):
-        self.loader = self.loader if loader is None else loader
+class JsonSchema4:
+    def __init__(self, loader=None, cache=None):
+        self.loader = loader
         self.cache = {} if cache is None else cache
         self.data = {}
         self.id = None
@@ -44,7 +41,7 @@ class JsonSchemaLoaderMixin:
     @classmethod
     def load_from_file(cls, file_name, *, loader=None, cache=None):
         try:
-            self = cls(loader=loader, cache=cache)
+            self = cls(loader, cache)
             _path = None
             raw = self.loader.load(file_name)
             # for _dir in self.dir:
@@ -170,8 +167,3 @@ class JsonSchemaLoaderMixin:
 
     def load_elem_float(self, data, value, name):
         data[name] = value
-
-
-class JsonSchema4(JsonSchemaLoaderMixin):
-    def __init__(self, **kwargs):
-        JsonSchemaLoaderMixin.__init__(self, **kwargs)

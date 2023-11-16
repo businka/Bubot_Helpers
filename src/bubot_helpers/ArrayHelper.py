@@ -9,15 +9,14 @@ class ArrayHelper:
     @classmethod
     def unique_extend(cls, a, b, **kwargs):
         if not len(a):
-            a.extend(b)
-            return a
+            return b
         if not len(b):
             return a
-        if isinstance(a[0], str):
-            for elem in b:
-                if elem not in a:
-                    a.append(elem)
-            return a
+        # if isinstance(a[0], str):
+        #     for elem in b:
+        #         if elem not in a:
+        #             a.append(elem)
+        #     return a
         if isinstance(a[0], dict):
             object_uid_prop = cls.detect_object_uid_prop(a, kwargs.get('object_uid', cls.default_object_uid_props))
             if object_uid_prop is None:
@@ -29,7 +28,8 @@ class ArrayHelper:
                 uid = elem.get(object_uid_prop)
                 if uid not in index:
                     a.append(elem)
-        return a
+            return a
+        return b
 
     @classmethod
     def detect_object_uid_prop(cls, data, object_uid_fields):

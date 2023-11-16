@@ -1,5 +1,5 @@
 import setuptools
-from src.Bubot.Helpers import __version__
+from src.bubot_helpers import __version__
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
