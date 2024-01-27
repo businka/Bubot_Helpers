@@ -22,8 +22,8 @@ def async_action(f):
         _action = prepare_action(f, args, kwargs)
         try:
             result = await f(*args, **kwargs)
-            if isinstance(result, Action):
-                result = _action.add_stat(result)
+            if not isinstance(result, Action):
+                _action.set_end(result)
             _action.set_end(result)
             return _action
 
@@ -42,10 +42,9 @@ def action(f):
         _action = prepare_action(f, args, kwargs)
         try:
             result = f(*args, **kwargs)
-            result = _action.add_stat(result)
             if not isinstance(result, Action):
-                return result
-            return _action.set_end(result)
+                _action.set_end(result)
+            return _action
         except ExtException as err:
             raise ExtException(parent=err, action=_action, skip_traceback=1) from err
         except Exception as err:

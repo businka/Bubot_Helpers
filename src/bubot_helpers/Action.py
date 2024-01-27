@@ -3,7 +3,7 @@ from time import time
 
 
 class Action:
-    def __init__(self, name=None, begin=True, *, group='other'):
+    def __init__(self, name=None, begin=True, *, group=None):
         self.name = name
         self.param = {}
         # self.error = None
@@ -30,32 +30,42 @@ class Action:
         if result is not None:
             self.result = result
         if self.name:
-            self.update_stat(self.name, [self.total_time - self.time, 1], self.group)
+            self.update_stat(self.name, [max(round(self.total_time - self.time, 3), 0), 1], self.group)
         return self
 
-    def add_stat(self, action):
+    def add_stat(self, action, group=None):
+        '''
+        :param action:
+        :param group:  Если указано, то переданная статистика с незаполненной группой добавляется в эту группу.
+        :return:
+        '''
         if not isinstance(action, Action):
             return action
-        if hasattr(action, 'group'):
-            for group in action.stat:
-                for elem in action.stat[group]:
-                    self.update_stat(elem, action.stat[group][elem], group)
-        else:
-            for elem in action.stat:
-                self.update_stat(elem, action.stat[elem])
+        if not group and hasattr(action, 'group') and action.group:
+            group = action.group
 
+        for elem in action.stat:
+            value = action.stat[elem]
+            if isinstance(value, list):  # это статистика
+                self.update_stat(elem, value, group)
+            elif isinstance(value, dict):
+                for elem2 in value:
+                    self.update_stat(elem2, value[elem2], elem)
         return action.result
 
-    def update_stat(self, name, stat, group='other'):
+    def update_stat(self, name, stat, group=None):
 
         self.time += stat[0]
-        if group not in self.stat:
+        _stat = self.stat
+        if group and group not in self.stat:
             self.stat[group] = {}
-        if name not in self.stat[group]:
-            self.stat[group][name] = stat
+            _stat = self.stat[group]
+
+        if name not in _stat:
+            _stat[name] = stat
         else:
-            self.stat[group][name][1] += stat[1]
-            self.stat[group][name][0] += stat[0]
+            _stat[name][1] += stat[1]
+            _stat[name][0] += stat[0]
         pass
 
     # def __bool__(self):
