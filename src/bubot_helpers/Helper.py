@@ -5,7 +5,7 @@ import json
 import os
 import re
 from collections import OrderedDict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, UTC
 
 from .ArrayHelper import ArrayHelper
 from .ExtException import ExtException, HandlerNotFoundError
@@ -14,10 +14,9 @@ from .ExtException import ExtException, HandlerNotFoundError
 class Helper:
 
     @staticmethod
-    def get_obj_class(path, obj_name, **kwargs):
-        folder_name = f'.{obj_name}' if kwargs.get('folder') else ''
+    def get_obj_class(path, obj_name, *, folder=False, suffix=None):
+        folder_name = f'.{obj_name}' if folder else ''
         class_name = obj_name
-        suffix = kwargs.get('suffix')
         if suffix:
             class_name += suffix
         full_path = f'{path}{folder_name}.{class_name}.{class_name}'
@@ -375,3 +374,15 @@ def convert_ticks_to_datetime(ticks):
 
 def get_tzinfo(timezone_offset=+3.0):
     return timezone(timedelta(hours=timezone_offset))
+
+
+def version_to_string(version, **kwargs):
+    digits = version.split('.')
+    result = ''
+    for i in range(len(digits)):
+        size = kwargs.get(f'size{i + 1}', 3)
+        if size:
+            result += f'{int(digits[i]):0{size}}'
+    return result
+
+
