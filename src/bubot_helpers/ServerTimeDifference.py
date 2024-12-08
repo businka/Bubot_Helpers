@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, UTC
+import datetime
 from bubot_helpers.preemption import wait_dest_time, delta_seconds, dest_time_with_preemption
 
 
@@ -9,16 +9,17 @@ class ServerTimeDifference:
 
     async def _test_request(self, preemption):
         import aiohttp
-        t0 = (datetime.now(UTC) + timedelta(seconds=1)).replace(microsecond=0)
+        t0 = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=1)).replace(microsecond=0)
         start_time = dest_time_with_preemption(t0, preemption)
         await wait_dest_time(start_time)
 
-        t1 = datetime.now(UTC)
+        t1 = datetime.datetime.now(datetime.timezone.utc)
         async with aiohttp.ClientSession() as session:
             async with session.request(**self.request_param) as response:
-                t2 = datetime.now(UTC)
+                t2 = datetime.datetime.now(datetime.timezone.utc)
                 headers_date = response.headers['Date']
-                ts = datetime.strptime(headers_date, '%a, %d %b %Y %H:%M:%S GMT').replace(tzinfo=UTC)
+                ts = datetime.datetime.strptime(headers_date, '%a, %d %b %Y %H:%M:%S GMT').replace(
+                    tzinfo=datetime.timezone.utc)
                 if self.debug_time_offset:
                     ts = dest_time_with_preemption(t2, self.debug_time_offset).replace(microsecond=0)
         return t0, t1, t2, ts
@@ -59,8 +60,8 @@ class ServerTimeDifference:
                     k *= -1
                     step /= 2
         if zero_delta == delta:
-            ts0 = ts + timedelta(seconds=1 - step * 2)
+            ts0 = ts + datetime.timedelta(seconds=1 - step * 2)
         else:
-            ts0 = ts - timedelta(seconds=step * 2)
+            ts0 = ts - datetime.timedelta(seconds=step * 2)
         result = delta_seconds(t2, ts0)
         return result

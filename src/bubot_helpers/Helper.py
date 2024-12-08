@@ -5,7 +5,7 @@ import json
 import os
 import re
 from collections import OrderedDict
-from datetime import datetime, timedelta, timezone, UTC
+import datetime
 
 from .ArrayHelper import ArrayHelper
 from .ExtException import ExtException, HandlerNotFoundError
@@ -52,10 +52,6 @@ class Helper:
             return _handler(**data)
         except Exception as err:
             return ExtException(dump=data, action='Helper.loads_exception', parent=err)
-
-    @staticmethod
-    def convert_ticks_to_datetime(ticks):
-        return datetime(1, 1, 1) + timedelta(microseconds=ticks // 10)
 
     @staticmethod
     def update_dict(*args):
@@ -129,6 +125,7 @@ class Helper:
         else:
             d = []
         array = OrderedDict()
+        item_name = ''
         names_check = {"main": [], "sub": {}}
         for sub_elem in elem:
             this_array = True if sub_elem.find("[@Имя]") else False
@@ -173,7 +170,7 @@ class Helper:
                     # Тут просто проверям наличие одноименных узлов без атрибута "Имя".
                     if sub_elem.tag in names_check["main"]:
                         raise ExtException(message='Дублирующиеся узлы в xml файле.',
-                                           dump=sub_elem.tag + "." + item_name)
+                                           dump=f'{sub_elem.tag}.{item_name}')
                     names_check["main"].append(sub_elem.tag)
                     if isinstance(value, str):
                         d.append(value)
@@ -369,11 +366,11 @@ def async_test(f):
 
 
 def convert_ticks_to_datetime(ticks):
-    return datetime(1, 1, 1) + timedelta(microseconds=ticks // 10)
+    return datetime.datetime(1, 1, 1) + datetime.timedelta(microseconds=ticks // 10)
 
 
 def get_tzinfo(timezone_offset=+3.0):
-    return timezone(timedelta(hours=timezone_offset))
+    return datetime.timezone(datetime.timedelta(hours=timezone_offset))
 
 
 def version_to_string(version, **kwargs):

@@ -22,9 +22,14 @@ def async_action(f):
         _action = prepare_action(f, args, kwargs)
         try:
             result = await f(*args, **kwargs)
-            if not isinstance(result, Action):
+            if isinstance(result, Action):
+                if result != _action:
+                    result = _action.add_stat(result)
+                    _action.set_end(result)
+                else:
+                    _action.set_end()
+            else:
                 _action.set_end(result)
-            _action.set_end(result)
             return _action
 
         except asyncio.CancelledError as err:

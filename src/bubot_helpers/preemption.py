@@ -1,12 +1,12 @@
 import asyncio
-from datetime import datetime, timedelta, UTC
+import datetime
 
 
 def dest_time_with_preemption(dest_time, preemption):
     if preemption > 0:
-        return dest_time - timedelta(seconds=preemption)
+        return dest_time - datetime.timedelta(seconds=preemption)
     else:
-        return dest_time + timedelta(seconds=preemption * -1)
+        return dest_time + datetime.timedelta(seconds=preemption * -1)
 
 
 def delta_seconds(time1, time2):
@@ -17,14 +17,14 @@ def delta_seconds(time1, time2):
     return delta
 
 
-async def wait_dest_time(dest_time: datetime):
+async def wait_dest_time(dest_time: datetime.datetime):
     while True:
-        current_time = datetime.now(UTC)
+        current_time = datetime.datetime.now(datetime.timezone.utc)
         delta = (dest_time - current_time).total_seconds() / 2
         if delta > 20:
             await asyncio.sleep(delta)
             continue
         break
 
-    while datetime.now(UTC) <= dest_time:
+    while datetime.datetime.now(datetime.timezone.utc) <= dest_time:
         await asyncio.sleep(0.001)
