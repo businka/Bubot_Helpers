@@ -2,7 +2,7 @@ import unittest
 from aiohttp import web
 from bubot_helpers.preemption import delta_seconds, wait_dest_time
 
-from bubot_helpers.ServerTimeDifference import ServerTimeDifference
+from bubot_helpers.preemption import ServerTimeDifference
 import asyncio
 
 
