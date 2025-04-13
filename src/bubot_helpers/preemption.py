@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+from .ExtException import ExtException
 
 
 def dest_time_with_preemption(dest_time, preemption):
@@ -42,14 +43,17 @@ class ServerTimeDifference:
         await wait_dest_time(start_time)
 
         t1 = datetime.datetime.now(datetime.timezone.utc)
-        async with aiohttp.ClientSession() as session:
-            async with session.request(**self.request_param) as response:
-                t2 = datetime.datetime.now(datetime.timezone.utc)
-                headers_date = response.headers['Date']
-                ts = datetime.datetime.strptime(headers_date, '%a, %d %b %Y %H:%M:%S GMT').replace(
-                    tzinfo=datetime.timezone.utc)
-                if self.debug_time_offset:
-                    ts = dest_time_with_preemption(t2, self.debug_time_offset).replace(microsecond=0)
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.request(**self.request_param) as response:
+                    t2 = datetime.datetime.now(datetime.timezone.utc)
+                    headers_date = response.headers['Date']
+                    ts = datetime.datetime.strptime(headers_date, '%a, %d %b %Y %H:%M:%S GMT').replace(
+                        tzinfo=datetime.timezone.utc)
+                    if self.debug_time_offset:
+                        ts = dest_time_with_preemption(t2, self.debug_time_offset).replace(microsecond=0)
+        except Exception as err:
+            raise ExtException(parent=err)
                 # resp = await response.text()
                 # print(resp, t2)
         return t0, t1, t2, ts
