@@ -66,6 +66,7 @@ class ExtException(Exception):
                     self.message = parent.message
                     self.detail = parent.detail
                     self.code = parent.code
+                if not self.dump:
                     self.dump = parent.dump
             elif isinstance(parent, Exception):
                 if not message:
@@ -83,8 +84,8 @@ class ExtException(Exception):
 
             else:
                 raise NotImplementedError(f'ExtException parent={type(parent)}')
-        if not self.stack:
-            self.add_sys_exc_to_stack()
+        # if not self.stack and self.skip_traceback >=0:
+        #     self.add_sys_exc_to_stack()
         if not self.message:
             self.message = self._message
         pass
@@ -104,18 +105,19 @@ class ExtException(Exception):
         self.stack += parent.stack
         if not parent.action:
             return
+
         _stack = {
             'action': parent.action
         }
-        if not self.stack:
-            data = self.get_sys_exc_info()
-            if data:
-                _stack['traceback'] = data['traceback']
-
         if parent.new_msg:
             _stack['message'] = parent.message
             if parent.detail:
                 _stack['detail'] = parent.detail
+        if not parent.stack:
+            data = self.get_sys_exc_info()
+            if data:
+                _stack['traceback'] = data['traceback']
+
         if parent.dump:
             _stack['dump'] = parent.dump
         self.stack.append(_stack)
