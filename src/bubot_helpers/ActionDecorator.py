@@ -35,9 +35,9 @@ def async_action(f):
         except asyncio.CancelledError as err:
             raise err from err
         except ExtException as err:
-            raise ExtException(parent=err, action=_action, skip_traceback=1) from err
+            raise ExtException(parent=err, action=_action, skip_traceback=1) from None
         except Exception as err:
-            raise ExtException(parent=err, action=_action, skip_traceback=1) from err
+            raise ExtException(parent=err, action=_action, skip_traceback=1) from None
 
     return wrapper
 
