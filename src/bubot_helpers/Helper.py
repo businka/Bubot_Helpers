@@ -310,7 +310,7 @@ class Helper:
             obj[obj_path] = value
 
     @staticmethod
-    def obj_get_path_value(obj, obj_path, *, delimiter=None):
+    def obj_get_path_value(obj, obj_path, *, default=None, delimiter=None):
         if isinstance(obj_path, str):
             if delimiter:
                 _path = obj_path.split(delimiter)
@@ -337,7 +337,7 @@ class Helper:
                             _obj = _obj[index]
                             i += 1
                         else:
-                            return None
+                            return default
                 # else:
                 #     return None
                 if not _obj:
