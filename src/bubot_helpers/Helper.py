@@ -25,24 +25,56 @@ class Helper:
         except ExtException as err:
             raise HandlerNotFoundError(detail=f'object {obj_name}', parent=err)
 
+    # @staticmethod
+    # def get_class(class_full_path):
+    #     try:
+    #         parts = class_full_path.split('.')
+    #         module = ".".join(parts[:-1])
+    #         m = __import__(module)
+    #         for comp in parts[1:]:
+    #             m = getattr(m, comp)
+    #         return m
+    #     # except ImportError as e:
+    #     #     # ошибки в классе или нет файла
+    #     #     raise ImportError(f'get_class({class_full_path}: {str(e)}')
+    #     # except AttributeError as e:
+    #     #     # Нет такого класса
+    #     #     raise AttributeError(f'get_class({class_full_path}: {str(e)}')
+    #     except Exception as err:
+    #         # ошибки в классе
+    #         raise ExtException(parent=err, action=f'get_class({class_full_path})')
+
     @staticmethod
     def get_class(class_full_path):
+        parts = class_full_path.split('.')
+        module_path = ".".join(parts[:-1])
+        class_name = parts[-1]
+
         try:
-            parts = class_full_path.split('.')
-            module = ".".join(parts[:-1])
-            m = __import__(module)
-            for comp in parts[1:]:
-                m = getattr(m, comp)
-            return m
-        except ImportError as e:
-            # ошибки в классе или нет файла
-            raise ImportError(f'get_class({class_full_path}: {str(e)}')
-        except AttributeError as e:
-            # Нет такого класса
-            raise AttributeError(f'get_class({class_full_path}: {str(e)}')
-        except Exception as e:
-            # ошибки в классе
-            raise Exception(f'get_class({class_full_path}: {str(e)}')
+            # Импортируем модуль
+            module = __import__(module_path, fromlist=[class_name])
+        except ImportError as err:
+            # Проверяем, есть ли модуль физически
+            import importlib.util
+            spec = importlib.util.find_spec(module_path)
+            if spec is None:
+                raise HandlerNotFoundError(message="Module not found", detail=module_path)
+            else:
+                # Модуль есть, но ошибка внутри него
+                raise ExtException(parent=err, message=f"Error in module", detail=f'{module_path}: {str(err)}')
+
+        try:
+            # Получаем класс из модуля
+            class_obj = getattr(module, class_name)
+            return class_obj
+        except AttributeError as err:
+            # Проверяем, может класс есть, но с ним что-то не так?
+            if hasattr(module, class_name):
+                # Атрибут есть, но при доступе ошибка (редко для getattr)
+                raise ExtException(parent=err, message=f"Error in module", detail=f'{class_name}: {str(err)}')
+            else:
+                raise HandlerNotFoundError(message="Module not found",
+                                           detail=f'{class_full_path} in module {module_path}')
 
     @classmethod
     def loads_exception(cls, data):
@@ -381,5 +413,3 @@ def version_to_string(version, **kwargs):
         if size:
             result += f'{int(digits[i]):0{size}}'
     return result
-
-

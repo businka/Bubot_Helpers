@@ -88,8 +88,8 @@ class ExtException(Exception):
 
             else:
                 raise NotImplementedError(f'ExtException parent={type(parent)}')
-        # if not self.stack and self.skip_traceback >=0:
-        #     self.add_sys_exc_to_stack()
+        if not self.stack:
+            self.add_sys_exc_to_stack(action)
         if not self.message:
             self.message = self._message
         pass
@@ -109,21 +109,17 @@ class ExtException(Exception):
 
         if parent.stack:
             self.stack.extend(parent.stack)
+        else:
+            self.stack = self.get_sys_exc_info()
 
         if not parent.action or (self.stack and self.stack[-1].get('action') == parent.action):
             return
-
-        stack1 = dict(action=parent.action)
+        stack1 = self.stack[-1]
+        stack1['action'] = parent.action
         if parent.new_msg:
             stack1['message'] = parent.message
             if parent.detail:
                 stack1['detail'] = parent.detail
-        if not parent.stack:
-            data = self.get_sys_exc_info()
-            if data:
-                stack1['traceback'] = data['traceback']
-
-        self.stack.append(stack1)
 
     def add_sys_exc_to_stack(self, action):
         try:
@@ -133,27 +129,32 @@ class ExtException(Exception):
         if not data:
             return
         if action:
-            data['action'] = action
-        self.stack.append(data)
+            data[-1]['action'] = action
+        self.stack = data
 
     def get_sys_exc_info(self):
         exc_info = sys.exc_info()
         if exc_info[2] is None:
             return None
-        last_call = traceback.extract_tb(exc_info[2], limit=self.skip_traceback + 1)
-        last_call = last_call[self.skip_traceback]
+        last_call = traceback.extract_tb(exc_info[2])
+        traceback_full = []
+        for elem in reversed(last_call):
+            filename = f'{path.basename(path.dirname(elem.filename))}/{path.basename(elem.filename)}'
+            if filename == 'bubot_helpers/ActionDecorator.py':
+                continue
+            traceback_full.append({
+                'filename': filename,
+                'line': elem.lineno
+            })
         if isinstance(exc_info[1], ExtException):
             message = getattr(exc_info[1], 'message')
             detail = getattr(exc_info[1], 'detail')
         else:
             message = exc_info[0].__name__
             detail = str(exc_info[1])
-        return {
-            'message': message,
-            'detail': detail,
-            'traceback': f'{path.basename(path.dirname(last_call.filename))}/{path.basename(last_call.filename)}, '
-                         f'{last_call.name}, line {last_call.lineno}'
-        }
+        traceback_full[0]['message'] = message
+        traceback_full[0]['detail'] = detail
+        return traceback_full
 
     @property
     def title(self):
@@ -180,14 +181,14 @@ class ExtException(Exception):
         if self.stack:
             res += '\n Stack:'
             for stack in self.stack:
-                _action = stack.get('action', '')  # ← get вместо pop
-                message = stack.get('message', '')  # ← get вместо pop
-                detail = stack.get('detail', '')  # ← get вместо pop
+                _action = stack.get('action', '')
+                message = stack.get('message', '')
+                detail = stack.get('detail', '')
                 res += '\n  -'
                 if _action:
                     res += f' {_action}'
                 if message:
-                    res += f' {message} {detail}'
+                    res += f' {message} {detail} '
 
                 stack_props = ''
                 for elem in stack:
